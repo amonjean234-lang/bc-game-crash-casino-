@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070b0a">
+  <title>VOLT CRASH — Jeu démo</title>
+  <style>
+    :root {
+      --bg: #070b0a;
+      --panel: #0d1412;
+      --panel-light: #111c18;
+      --line: rgba(157, 255, 190, .12);
+      --muted: #82958b;
+      --text: #eef8f1;
+      --green: #48ff92;
+      --green-dark: #1ebd61;
+      --lime: #c6ff5c;
+      --red: #ff5f66;
+      --shadow: 0 20px 70px rgba(0, 0, 0, .34);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background: var(--bg);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      line-height: 1.4;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .app-shell {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 76% 12%, rgba(51, 210, 114, .1), transparent 29rem),
+        linear-gradient(135deg, #070b0a 0%, #09110e 53%, #07100d 100%);
+    }
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(18px, 4vw, 64px);
+      border-bottom: 1px solid var(--line);
+      background: rgba(6, 11, 9, .8);
+      backdrop-filter: blur(16px);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: .11em;
+      font-weight: 900;
+      font-size: 1.03rem;
+    }
+    .brand-mark {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      color: #061008;
+      background: var(--green);
+      clip-path: polygon(50% 0, 100% 23%, 88% 82%, 50% 100%, 12% 82%, 0 23%);
+      font-size: .9rem;
+    }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .demo-pill, .balance {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 8px 12px;
+      background: rgba(16, 29, 23, .8);
+      color: var(--muted);
+      font-size: .76rem;
+      letter-spacing: .04em;
+    }
+    .demo-pill { color: var(--lime); }
+    .balance strong { color: var(--text); font-size: .9rem; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+
+    main { max-width: 1440px; margin: 0 auto; padding: 38px clamp(18px, 4vw, 64px) 54px; }
+    .page-heading { display: flex; justify-content: space-between; gap: 20px; align-items: end; margin-bottom: 26px; }
+    .eyebrow { margin: 0 0 8px; color: var(--green); font-weight: 800; font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.6rem); letter-spacing: -.035em; }
+    .page-heading p { max-width: 400px; margin: 0; color: var(--muted); text-align: right; font-size: .87rem; }
+    .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; }
+    .panel { border: 1px solid var(--line); background: rgba(13, 20, 18, .92); box-shadow: var(--shadow); }
+    .game-panel { min-height: 590px; display: flex; flex-direction: column; overflow: hidden; border-radius: 10px; }
+    .game-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .live-label { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .live-label i { width: 8px; height: 8px; display: block; border-radius: 50%; background: var(--green); animation: pulse 1.2s infinite; }
+    .round { color: var(--muted); font-size: .75rem; }
+    .chart {
+      position: relative;
+      flex: 1;
+      min-height: 390px;
+      overflow: hidden;
+      background-color: #0b1511;
+      background-image: linear-gradient(rgba(129, 255, 172, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(129, 255, 172, .045) 1px, transparent 1px);
+      background-size: 64px 64px;
+    }
+    .chart::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 48% 80%, rgba(48, 255, 132, .08), transparent 57%); pointer-events: none; }
+    .axis { position: absolute; right: 18px; top: 18px; bottom: 26px; display: flex; flex-direction: column; justify-content: space-between; color: rgba(193, 224, 202, .42); font-size: .68rem; }
+    .multiplier { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; text-align: center; transform: translateY(-12px); }
+    .multiplier-value { color: var(--green); font-size: clamp(4.5rem, 12vw, 8.8rem); line-height: .9; font-weight: 900; letter-spacing: -.075em; text-shadow: 0 0 28px rgba(72, 255, 146, .22); }
+    .multiplier-unit { margin-top: 18px; color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .25em; text-transform: uppercase; }
+    .multiplier.crashed .multiplier-value { color: var(--red); text-shadow: 0 0 28px rgba(255, 95, 102, .2); }
+    .multiplier.crashed .multiplier-unit { color: var(--red); }
+    .flight-line { position: absolute; z-index: 1; left: -8%; bottom: 8%; width: 117%; height: 82%; opacity: .9; clip-path: polygon(0 96%, 16% 89%, 30% 88%, 45% 68%, 61% 72%, 78% 40%, 100% 0, 100% 100%, 0 100%); background: linear-gradient(135deg, rgba(55, 246, 133, .14), rgba(55, 246, 133, .02)); transition: opacity .3s; }
+    .flight-line::before { content: ""; position: absolute; left: 9%; bottom: 4%; width: 88%; height: 3px; transform: rotate(-30deg); transform-origin: left; background: var(--green); box-shadow: 0 0 15px var(--green); }
+    .crashed .flight-line { opacity: .12; filter: grayscale(1); }
+    .rocket { position: absolute; z-index: 3; left: 71%; top: 25%; width: 35px; height: 35px; color: var(--green); transform: rotate(41deg); filter: drop-shadow(0 0 9px var(--green)); transition: left .3s, top .3s; }
+    .rocket::before { content: "◆"; position: absolute; font-size: 25px; }
+    .rocket::after { content: ""; position: absolute; top: 22px; left: 5px; width: 9px; height: 23px; background: linear-gradient(var(--lime), transparent); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+    .crashed .rocket { color: var(--red); filter: drop-shadow(0 0 9px var(--red)); }
+    .game-footer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; border-top: 1px solid var(--line); background: var(--line); }
+    .stat { padding: 15px 20px; background: var(--panel); }
+    .stat span { display: block; color: var(--muted); font-size: .69rem; text-transform: uppercase; letter-spacing: .1em; }
+    .stat strong { display: block; margin-top: 4px; font-size: 1rem; }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .bet-panel { border-radius: 10px; padding: 20px; }
+    .panel-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .panel-title h2 { margin: 0; font-size: .94rem; letter-spacing: .04em; }
+    .panel-title span { color: var(--muted); font-size: .7rem; }
+    .field-label { display: flex; justify-content: space-between; margin: 0 0 8px; color: var(--muted); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .input-wrap { position: relative; }
+    .input-wrap input { width: 100%; height: 48px; padding: 0 58px 0 15px; outline: none; border: 1px solid var(--line); border-radius: 6px; color: var(--text); background: #08100d; font-size: 1.05rem; font-weight: 800; }
+    .input-wrap input:focus { border-color: rgba(72, 255, 146, .6); box-shadow: 0 0 0 3px rgba(72, 255, 146, .08); }
+    .currency { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--green); font-size: .75rem; font-weight: 900; }
+    .quick-bets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 19px; }
+    .quick-bets button { padding: 7px 4px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); background: transparent; font-size: .72rem; }
+    .quick-bets button:hover { border-color: var(--green); color: var(--green); }
+    .primary-btn, .cashout-btn { width: 100%; min-height: 52px; border: 0; border-radius: 6px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; transition: transform .16s, filter .16s, background .16s; }
+    .primary-btn { color: #061008; background: var(--green); box-shadow: 0 8px 22px rgba(72, 255, 146, .13); }
+    .cashout-btn { display: none; margin-top: 9px; color: #061008; background: var(--lime); }
+    .primary-btn:hover, .cashout-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .primary-btn:disabled, .cashout-btn:disabled { cursor: not-allowed; opacity: .42; transform: none; }
+    .cashout-btn.visible { display: block; }
+    .helper { min-height: 18px; margin: 11px 0 0; color: var(--muted); font-size: .73rem; text-align: center; }
+    .history { flex: 1; overflow: hidden; border-radius: 10px; }
+    .history-head { padding: 17px 20px 13px; border-bottom: 1px solid var(--line); }
+    .history-head h2 { margin: 0; font-size: .9rem; }
+    .history-list { height: 100%; margin: 0; padding: 0 20px; list-style: none; }
+    .history-list li { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(157, 255, 190, .08); color: var(--muted); font-size: .78rem; }
+    .history-list strong { color: var(--green); font-size: .85rem; }
+    .history-list strong.low { color: var(--red); }
+    .notice { margin-top: 19px; padding: 12px 14px; border-left: 2px solid var(--green-dark); color: var(--muted); background: rgba(22, 62, 40, .18); font-size: .7rem; line-height: 1.55; }
+    .notice b { color: var(--text); }
+    @keyframes pulse { 50% { opacity: .35; transform: scale(.72); } }
+    @media (max-width: 900px) { .game-layout { grid-template-columns: 1fr; } .sidebar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .history { min-height: 350px; } }
+    @media (max-width: 620px) { .topbar { height: 64px; } .demo-pill { display: none; } main { padding-top: 26px; } .page-heading { display: block; } .page-heading p { margin-top: 10px; text-align: left; } .sidebar { display: flex; } .game-panel { min-height: 520px; } .chart { min-height: 330px; } .game-footer { grid-template-columns: 1fr; } .stat { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; } .stat strong { margin-top: 0; } }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Volt Crash accueil"><span class="brand-mark">V</span> VOLT CRASH</a>
+      <div class="top-actions">
+        <div class="demo-pill"><span class="status-dot"></span> MODE DÉMO</div>
+        <div class="balance"><span>Solde</span><strong id="balance">25 000 FCFA</strong></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-heading">
+        <div><p class="eyebrow">Arcade instantanée</p><h1>Monte avant que ça décroche.</h1></div>
+        <p>Place ta mise, suis le multiplicateur et encaisse avant le crash.</p>
+      </section>
+
+      <div class="game-layout">
+        <section class="panel game-panel" aria-label="Zone de jeu crash">
+          <div class="game-head"><div class="live-label"><i></i> Manche en direct</div><div class="round" id="round">Manche #48291</div></div>
+          <div class="chart" id="chart">
+            <div class="axis"><span>4.0x</span><span>3.0x</span><span>2.0x</span><span>1.0x</span></div>
+            <div class="flight-line"></div><div class="rocket"></div>
+            <div class="multiplier" id="multiplier"><div class="multiplier-value" id="multiplierValue">1.00x</div><div class="multiplier-unit" id="statusText">En attente de ta mise</div></div>
+          </div>
+          <div class="game-footer"><div class="stat"><span>Dernier crash</span><strong id="lastCrash">2.47x</strong></div><div class="stat"><span>Joueurs actifs</span><strong>1 284</strong></div><div class="stat"><span>Gain potentiel</span><strong id="potential">0 FCFA</strong></div></div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel bet-panel">
+            <div class="panel-title"><h2>Ta mise</h2><span>Minimum 100 FCFA</span></div>
+            <label class="field-label" for="betAmount"><span>Montant</span><span id="betLimit">Solde disponible</span></label>
+            <div class="input-wrap"><input id="betAmount" type="number" min="100" step="100" value="1000" inputmode="numeric" aria-label="Montant de la mise"><span class="currency">FCFA</span></div>
+            <div class="quick-bets"><button type="button" data-amount="500">500</button><button type="button" data-amount="1000">1K</button><button type="button" data-amount="5000">5K</button><button type="button" data-amount="10000">10K</button></div>
+            <button class="primary-btn" id="betButton" type="button">Parier</button>
+            <button class="cashout-btn" id="cashoutButton" type="button">Encaisser <span id="cashoutValue">0 FCFA</span></button>
+            <p class="helper" id="helper" aria-live="polite">La prochaine manche démarre quand tu es prêt.</p>
+          </section>
+          <section class="panel history">
+            <div class="history-head"><h2>Historique des manches</h2></div>
+            <ul class="history-list" id="historyList"><li><span>Il y a 12 sec</span><strong>2.47x</strong></li><li><span>Il y a 1 min</span><strong class="low">1.18x</strong></li><li><span>Il y a 2 min</span><strong>5.62x</strong></li><li><span>Il y a 3 min</span><strong>1.74x</strong></li><li><span>Il y a 4 min</span><strong>3.09x</strong></li></ul>
+          </section>
+        </aside>
+      </div>
+      <div class="notice"><b>Jeu de démonstration.</b> Aucun dépôt, retrait ou argent réel n'est utilisé. Les crédits sont virtuels et servent uniquement à tester l'interface.</div>
+    </main>
+  </div>
+
+  <script>
+    const balanceElement = document.getElementById('balance');
+    const betAmountElement = document.getElementById('betAmount');
+    const betButton = document.getElementById('betButton');
+    const cashoutButton = document.getElementById('cashoutButton');
+    const cashoutValue = document.getElementById('cashoutValue');
+    const potentialElement = document.getElementById('potential');
+    const multiplierElement = document.getElementById('multiplier');
+    const multiplierValueElement = document.getElementById('multiplierValue');
+    const statusTextElement = document.getElementById('statusText');
+    const chartElement = document.getElementById('chart');
+    const roundElement = document.getElementById('round');
+    const lastCrashElement = document.getElementById('lastCrash');
+    const historyList = document.getElementById('historyList');
+    const helperElement = document.getElementById('helper');
+
+    let balance = 25000;
+    let multiplier = 1;
+    let crashPoint = 0;
+    let bet = 0;
+    let roundActive = false;
+    let cashedOut = false;
+    let timer;
+    let roundNumber = 48291;
+
+    const formatMoney = value => `${Math.round(value).toLocaleString('fr-FR')} FCFA`;
+    const formatMultiplier = value => `${value.toFixed(2)}x`;
+    const randomCrashPoint = () => Math.max(1.08, Math.min(12, 1 + Math.pow(Math.random(), 1.7) * 8.8));
+
+    function updateBalance() { balanceElement.textContent = formatMoney(balance); }
+    function updatePotential() {
+      const potential = bet && roundActive ? bet * multiplier : 0;
+      potentialElement.textContent = formatMoney(potential);
+      cashoutValue.textContent = formatMoney(potential);
+    }
+    function setStatus(text) { statusTextElement.textContent = text; }
+    function addHistory(value) {
+      const item = document.createElement('li');
+      const isLow = value < 1.5;
+      item.innerHTML = `<span>À l'instant</span><strong class="${isLow ? 'low' : ''}">${formatMultiplier(value)}</strong>`;
+      historyList.prepend(item);
+      while (historyList.children.length > 5) historyList.lastElementChild.remove();
+    }
+
+    function finishRound() {
+      clearInterval(timer);
+      roundActive = false;
+      multiplier = crashPoint;
+      multiplierValueElement.textContent = formatMultiplier(crashPoint);
+      multiplierElement.classList.add('crashed');
+      chartElement.classList.add('crashed');
+      setStatus('Crash — nouvelle manche bientôt');
+      lastCrashElement.textContent = formatMultiplier(crashPoint);
+      addHistory(crashPoint);
+      betButton.disabled = false;
+      cashoutButton.classList.remove('visible');
+      if (!cashedOut && bet) helperElement.textContent = `Perdu : ${formatMoney(bet)}. La prochaine manche arrive.`;
+      bet = 0;
+      updatePotential();
+      window.setTimeout(resetRound, 2500);
+    }
+
+    function resetRound() {
+      multiplier = 1;
+      crashPoint = randomCrashPoint();
+      cashedOut = false;
+      multiplierElement.classList.remove('crashed');
+      chartElement.classList.remove('crashed');
+      multiplierValueElement.textContent = '1.00x';
+      setStatus('En attente de ta mise');
+      helperElement.textContent = 'La prochaine manche démarre quand tu es prêt.';
+      roundNumber += 1;
+      roundElement.textContent = `Manche #${roundNumber}`;
+      betButton.disabled = false;
+    }
+
+    function startRound() {
+      roundActive = true;
+      multiplier = 1;
+      crashPoint = randomCrashPoint();
+      multiplierElement.classList.remove('crashed');
+      chartElement.classList.remove('crashed');
+      betButton.disabled = true;
+      cashoutButton.classList.add('visible');
+      setStatus('La manche est lancée');
+      helperElement.textContent = 'Encaisse avant le crash.';
+      timer = window.setInterval(() => {
+        multiplier += 0.012 + multiplier * 0.006;
+        multiplierValueElement.textContent = formatMultiplier(multiplier);
+        updatePotential();
+        if (multiplier >= crashPoint) finishRound();
+      }, 100);
+    }
+
+    betButton.addEventListener('click', () => {
+      if (roundActive) return;
+      const requestedBet = Number(betAmountElement.value);
+      if (!Number.isFinite(requestedBet) || requestedBet < 100) {
+        helperElement.textContent = 'La mise minimum est de 100 FCFA.';
+        return;
+      }
+      if (requestedBet > balance) {
+        helperElement.textContent = 'Solde insuffisant pour cette mise.';
+        return;
+      }
+      bet = Math.floor(requestedBet / 100) * 100;
+      balance -= bet;
+      updateBalance();
+      updatePotential();
+      startRound();
+    });
+
+    cashoutButton.addEventListener('click', () => {
+      if (!roundActive || cashedOut || !bet) return;
+      const winnings = bet * multiplier;
+      balance += winnings;
+      cashedOut = true;
+      updateBalance();
+      cashoutButton.disabled = true;
+      setStatus('Gain sécurisé');
+      helperElement.textContent = `Bravo, tu encaisses ${formatMoney(winnings)}.`;
+      updatePotential();
+    });
+
+    document.querySelectorAll('[data-amount]').forEach(button => {
+      button.addEventListener('click', () => { betAmountElement.value = button.dataset.amount; });
+    });
+
+    betAmountElement.addEventListener('input', () => {
+      cashoutButton.disabled = false;
+      if (!roundActive) helperElement.textContent = 'La prochaine manche démarre quand tu es prêt.';
+    });
+
+    updateBalance();
+    resetRound();
+  </script>
+</body>
+</html>
